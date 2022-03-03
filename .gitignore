@@ -1,0 +1,17 @@
+__pycache__
+.vscode
+
+# backend directory
+backend/inc
+backend/lib
+backend/*.cpp
+backend/*.so
+backend/*.o
+
+# data_out directory
+data_out/*.npy
+data_out/*.p
+data_out/*.png
+
+# cpp_backend directory
+build
