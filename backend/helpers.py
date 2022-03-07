@@ -1,10 +1,32 @@
 import logging
+import os
 
 import numpy as np
 from scipy.sparse import csr_matrix
 
+logger = logging.Logger('python')
 
-def travel(state, action, P, max_actions):
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+ch.setFormatter(logging.Formatter('[%(name)s] (%(levelname)s) %(message)s'))
+
+logger.addHandler(ch)
+
+
+def files_available(data_out, files):
+
+    valid = True
+
+    for file in files:
+        path = os.path.join(data_out, file)
+        valid &= os.path.isfile(path)
+        if not valid:
+            return False, path
+
+    return valid, None
+
+
+def travel(state, action, P, max_actions, static=False):
 
     row_in_p = state * max_actions + action
 
@@ -15,6 +37,11 @@ def travel(state, action, P, max_actions):
 
     p_next_states = [P[row_in_p, next_state] for next_state in next_states]
 
+    # Static next state
+    if static:
+        return next_states[np.argmax(p_next_states)]
+
+    # Stochastic next state
     p_total = np.sum(p_next_states)
 
     if 1.0 < p_total < 1.1:
@@ -23,7 +50,7 @@ def travel(state, action, P, max_actions):
     return np.random.choice(next_states, p=p_next_states)
 
 
-def path_from_policy(state, P, pi, num_nodes, max_actions):
+def path_from_policy(state, P, pi, num_nodes, max_actions, static=False):
 
     iter = 0
 
@@ -37,13 +64,13 @@ def path_from_policy(state, P, pi, num_nodes, max_actions):
         iter += 1
 
         try:
-            state = travel(state, pi[state], P, max_actions)
+            state = travel(state, pi[state], P, max_actions, static)
             charge, tar_node, cur_node = decode_state(state, num_nodes)
             goal_reached = cur_node == tar_node
             path_states.append(state)
             path_nodes.append(cur_node)
         except ValueError as e:
-            logging.error(f'No result in path_from_policy due to error: {e}')
+            logger.error(f'No result in path_from_policy due to error: {e}')
             return path_states, path_nodes
 
     return path_states, path_nodes
@@ -84,17 +111,15 @@ def get_max_u(T):
     return int(max_u + 1), int(max_node)
 
 
-def get_transition_matrix(num_nodes, start_ids, end_ids, distances):
+def get_transition_matrix(num_nodes, T_row, T_col, T_dist):
 
     # Make matrix bi-directional
-    data = np.hstack((distances, distances))
-    row = np.hstack((start_ids, end_ids))
-    col = np.hstack((end_ids, start_ids))
+    data = np.hstack((T_dist, T_dist))
+    row = np.hstack((T_row, T_col))
+    col = np.hstack((T_col, T_row))
 
     # Transition distance between nodes
-    T = csr_matrix((data, (row, col)), shape=(num_nodes, num_nodes), dtype=np.float32)
-
-    return T
+    return csr_matrix((data, (row, col)), shape=(num_nodes, num_nodes), dtype=np.float32)
 
 
 def compress_csr_graph(T):
@@ -133,8 +158,9 @@ def compress_csr_graph(T):
                 else:
                     node_ind = np.where(
                         vertex_data[:, 1] == new_nodes[node])[0][0]
-                    vertex_data[node_ind, 2] = min(
-                        vertex_data[node_ind, 2], total_dist)
+                    # vertex_data[node_ind, 2] = min(
+                    #     vertex_data[node_ind, 2], total_dist)
+                    vertex_data[node_ind, 2] = 1
 
         T_data = np.vstack((T_data, vertex_data))
 

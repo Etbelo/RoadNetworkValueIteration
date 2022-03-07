@@ -23,11 +23,11 @@ auto async_value_iteration(
     int num_states, int num_nodes, int max_actions, float alpha,
     float error_min, int num_blocks) -> void;
 
-auto update_block(unsigned int low_bound, unsigned int up_bound,
+auto update_block(int state_low, int state_high,
                   Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> P,
                   Eigen::Ref<Eigen::VectorXf> J, Eigen::Ref<Eigen::VectorXi> pi,
-                  int max_actions, float alpha, int num_nodes,
-                  unsigned int num_nodes_sq) -> float;
+                  int max_actions, float alpha, int num_nodes, int num_nodes_sq)
+    -> float;
 
 auto decode_state(int state, int num_nodes, int num_nodes_sq)
     -> std::tuple<int, int, int>;

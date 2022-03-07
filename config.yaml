@@ -1,12 +1,12 @@
 generate:
-  num_charges: 30     # Maximum storage of charges
-  max_charge: 2       # Charge usage for maximum distance
-  sigma_env: 0.5      # Environment uncertainties affecting charge consumption
-  p_travel: 0.9       # Probability to travel to correct neighbor
-  n_charge: 0         # Number of charges to consider besides correct charge
-  num_chargers: 100   # Number of random chargers on the map
+  dataset: 'small_arena'  # Name of original dataset folder
+  compress: False         # Compress original graph (Remove degree 2 nodes?)
+  num_charges: 8          # Maximum storage of charges
+  max_charge: 1           # Charge usage for maximum distance
+  p_travel: 0.9           # Probability to travel to correct neighbor
+  num_chargers: 2         # Number of random chargers on the map
 
 evaluate:
-  alpha: 0.98         # Discount factor for value iteration
-  error_min: 0.001    # Error at which to break greedy algorithm
-  num_blocks: 100     # Number of blocks to split statespace in
+  alpha: 0.95             # Discount factor for value iteration
+  error_min: 0.001        # Error at which to break greedy algorithm
+  num_blocks: 100         # Number of blocks to split statespace in

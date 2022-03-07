@@ -53,14 +53,14 @@ auto async_value_iteration(
 #pragma omp parallel for schedule(guided, 1)
         for (int i = 0; i < num_blocks; ++i) {
             // State bounds for current block
-            const auto low_bound = i * block_size;
-            const auto up_bound =
+            const auto state_low = i * block_size;
+            const auto state_high =
                 i == num_blocks - 1 ? num_states : (i + 1) * block_size;
 
             // Handle current block
             const auto block_error =
-                update_block(low_bound, up_bound, P, J, pi, max_actions, alpha,
-                             num_nodes, num_nodes_sq);
+                update_block(state_low, state_high, P, J, pi, max_actions,
+                             alpha, num_nodes, num_nodes_sq);
 
             // Update thread-local error with error of current block
             local_errors.at(omp_get_thread_num()) =
@@ -88,15 +88,15 @@ auto async_value_iteration(
     } while (global_error > error_min);
 }
 
-auto update_block(const unsigned int low_bound, const unsigned int up_bound,
+auto update_block(const int state_low, const int state_high,
                   Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> P,
                   Eigen::Ref<Eigen::VectorXf> J, Eigen::Ref<Eigen::VectorXi> pi,
                   const int max_actions, const float alpha, const int num_nodes,
-                  const unsigned int num_nodes_sq) -> float {
+                  const int num_nodes_sq) -> float {
     float local_error = -1.0;
 
     // Loop over all states in current block
-    for (auto state = low_bound; state < up_bound; ++state) {
+    for (auto state = state_low; state < state_high; ++state) {
         float J_temp = 0.0;
         int pi_temp = 0;
 
@@ -144,7 +144,7 @@ auto update_block(const unsigned int low_bound, const unsigned int up_bound,
     return local_error;
 }
 
-auto decode_state(int state, int num_nodes, int num_nodes_sq)
+auto decode_state(const int state, const int num_nodes, const int num_nodes_sq)
     -> std::tuple<int, int, int> {
     const auto charge = state / num_nodes_sq;
     const auto tar_node = state % num_nodes_sq / num_nodes;
@@ -153,28 +153,30 @@ auto decode_state(int state, int num_nodes, int num_nodes_sq)
     return {charge, tar_node, cur_node};
 }
 
-auto stage_cost(int charge, int tar_node, int cur_node, int action) -> float {
+auto stage_cost(const int charge, const int tar_node, const int cur_node,
+                const int action) -> float {
     // Reward arriving at target
     if (cur_node == tar_node && action == 0) {
         return -100.0;
     }
 
-    // Punish staying at current node without action
-    if (cur_node != tar_node && action == 0) {
-        return 20.0;
-    }
+    // Handle cost if not arrived at target yet
+    float t_stage_cost = 0.0;
 
-    // Punish having no charge left
     if (charge == 0) {
-        return 100.0;
+        // Punish having no charge left
+        t_stage_cost += 100;
+    } else {
+        //  Reward aquiring charge
+        t_stage_cost -= 50.0;
     }
 
-    // Punish Moving too much
     if (action > 0) {
-        return 5.0;
+        // Punish moving more than needed
+        t_stage_cost += 10.0;
     }
 
-    return 0.0;
+    return t_stage_cost;
 }
 
 }  // namespace backend

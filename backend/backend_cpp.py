@@ -3,6 +3,16 @@ import logging
 
 import numpy as np
 
+
+logger = logging.Logger('python')
+
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+ch.setFormatter(logging.Formatter('[%(name)s] (%(levelname)s) %(message)s'))
+
+logger.addHandler(ch)
+
+
 ##################
 # Interface Code #
 ##################
@@ -23,7 +33,7 @@ def _compile_output_complete():
 
 
 if not _compile_output_complete():
-    logging.info("compile c++ backend")
+    logger.info("compile c++ backend")
 
     base_dir = os.path.dirname(__file__)
 
@@ -45,7 +55,7 @@ if not _compile_output_complete():
     os.chdir("..")
 
 if not _compile_output_complete():
-    logging.error("Compilation output is incomplete")
+    logger.error("Compilation output is incomplete")
     raise ImportError("Compiling the c++ python interface was not successful")
 
 try:
@@ -53,7 +63,7 @@ try:
     from cffi import FFI
 
 except (ModuleNotFoundError, ImportError) as e:
-    logging.error(f"Compilation error: {e}")
+    logger.error(f"Compilation error: {e}")
     raise
 
 _ffi = FFI()
@@ -66,7 +76,7 @@ _ffi = FFI()
 
 def generate_mdp(
         chargers, T, num_nodes, min_dist, max_dist, max_actions, data_out, num_charges, max_charge,
-        sigma_env, p_travel, n_charge):
+        p_travel):
 
     # Transition matrix
     T_indptr = _ffi.cast("int*", T.indptr.ctypes.data)
@@ -81,7 +91,7 @@ def generate_mdp(
 
     cpp_interface.lib.cffi_generate_mdp(
         is_charger_data, T_indptr, T_indices, T_data, T.data.size, num_nodes, min_dist, max_dist,
-        max_actions, data_out_data, num_charges, max_charge, sigma_env, p_travel, n_charge)
+        max_actions, data_out_data, num_charges, max_charge, p_travel)
 
 
 def evaluate_mdp(num_states, P, num_nodes, max_actions, num_charges, alpha, error_min, num_blocks):

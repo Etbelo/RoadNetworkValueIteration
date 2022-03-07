@@ -1,13 +1,16 @@
 cmake_minimum_required (VERSION 3.0)
 
+# Enable verbose output of backend library
 set(VERBOSE ON)
 
+# If standalone compilation
 if(NOT DEFINED LIB_NAME)
   set(LIB_NAME backend)
   set(DEST_LIB "${PROJECT_SOURCE_DIR}/install/lib")
   set(DEST_INC "${PROJECT_SOURCE_DIR}/install/")
 endif()
 
+# Include required packages
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/;${CMAKE_MODULE_PATH}")
 
 find_package(OpenMP REQUIRED)
@@ -15,6 +18,7 @@ find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)  
 find_package(LAPACKE REQUIRED)
 
+# Build backend library
 set(SRC_FILES 
   ${CMAKE_CURRENT_LIST_DIR}/src/MDPGeneration.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/MDPValueIteration.cpp
@@ -27,7 +31,6 @@ if(VERBOSE)
   add_definitions(-DVERBOSE)
 endif()
 
-
 include_directories(
   ${CMAKE_CURRENT_LIST_DIR}
   ${CMAKE_CURRENT_LIST_DIR}/inc
@@ -38,6 +41,7 @@ add_library(${LIB_NAME} SHARED ${SRC_FILES})
 
 target_link_libraries(${LIB_NAME} OpenMP::OpenMP_CXX ${LAPACKE_LIBRARIES_DEP})
 
+# Install backend library
 if(WIN32)
   message("No install step for windows!")
 else()

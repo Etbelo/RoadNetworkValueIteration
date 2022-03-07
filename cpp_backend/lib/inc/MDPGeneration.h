@@ -14,14 +14,13 @@ auto generate_mdp(bool *is_charger_data, int *T_indptr, int *T_indices,
                   float *T_data, const int T_nnz, const int num_nodes,
                   const float min_dist, const float max_dist,
                   const int max_actions, char data_out[], const int num_charges,
-                  const int max_charge, const float sigma_env,
-                  const float p_travel, const int n_charge) -> void;
+                  const int max_charge, const float p_travel) -> void;
 
 auto construct_p(bool *is_charger_data,
                  Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> T,
                  int num_states, int num_nodes, float min_dist, float max_dist,
                  int max_actions, int num_charges, int max_charge,
-                 float sigma_env, float p_travel, int n_charge)
+                 float p_travel)
     -> std::tuple<std::vector<unsigned int>, std::vector<unsigned int>,
                   std::vector<float>>;
 
@@ -33,23 +32,18 @@ auto p_stay_node(std::vector<unsigned int> *p_row,
 auto p_move_node(std::vector<unsigned int> *p_row,
                  std::vector<unsigned int> *p_col, std::vector<float> *p_data,
                  int cur_node, int action, int num_nodes, int num_charges,
-                 float p_travel, float sigma_env, int n_charge, int max_actions,
+                 float p_travel, int max_actions,
                  const std::vector<int> &next_nodes,
-                 const std::vector<int> &charges) -> void;
+                 Eigen::Ref<Eigen::ArrayXi> charge_costs) -> void;
 
 auto get_neighbors(Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> T,
-                   int node) -> std::pair<std::vector<int>, std::vector<float>>;
+                   int node, float min_dist, float max_dist, int max_charge)
+    -> std::pair<std::vector<int>, Eigen::ArrayXi>;
 
 auto encode_state(int charge, int tar_node, int cur_node, int num_nodes) -> int;
 
-auto get_charges(const std::vector<float> &distances, float min_dist,
-                 float max_dist, int max_charge) -> std::vector<int>;
-
-auto get_norm_dist(const std::vector<int> &values, int exp, float sigma)
-    -> Eigen::VectorXf;
-
-auto get_uni_dist(const std::vector<int> &values, int exp, float p)
-    -> Eigen::VectorXf;
+auto get_move_p(int num_valid, int next_node, int consider_node, float p_travel)
+    -> float;
 }  // namespace backend
 
 #endif  // __MDP_VALUE_ITERATION_H__

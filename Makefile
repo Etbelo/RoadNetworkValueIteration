@@ -16,7 +16,7 @@ compile:
 
 # Generate and evaluate mdp from dataset
 generate:
-	python3 -W ignore gen_mdp.py --plot
+	python3 -W ignore gen_mdp.py -d_in data -d_out data_out -c config.yaml --plot
 
 evaluate:
-	python3 -W ignore eval_mdp.py --plot
+	python3 -W ignore eval_mdp.py -d_out data_out -c config.yaml --plot

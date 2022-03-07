@@ -9,8 +9,7 @@ def compile_interface(verbose=True):
                               int *T_indices, float *T_data, int T_nnz,
                               int num_nodes, float min_dist, float max_dist,
                               int max_actions, char data_out[], int num_charges,
-                              int max_charge, float sigma_env, float p_travel,
-                              int n_charge);""")
+                              int max_charge, float p_travel);""")
 
     ffi.cdef("""void cffi_evaluate_mdp(int *pi_data, float *J_data, int *P_indptr,
                               int *P_indices, float *P_data, int P_nnz,
