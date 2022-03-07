@@ -6,6 +6,7 @@ project(${LIB_NAME}_test)
 # Cmake compile flags: Warnings, Optimizations
 set(CMAKE_CXX_FLAGS "-Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ffast-math -fopenmp")
+set(CMAKE_BUILD_TYPE Release)
 
 # Define backend interface target location
 set(DEST_LIB ${PROJECT_SOURCE_DIR}/../backend/lib)

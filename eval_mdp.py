@@ -41,7 +41,7 @@ def main(plot, show_fig, force, config_file, data_out):
         data_out, ['p_params.p', 'p_row.npy', 'p_col.npy', 'p_data.npy'])
 
     if not valid:
-        logger.error(f'Missing file: {missing}')
+        logger.error(f'Missing files: {missing}')
         return
 
     data = pickle.load(open(os.path.join(data_out, 'p_params.p'), "rb"))
@@ -113,8 +113,7 @@ def main(plot, show_fig, force, config_file, data_out):
         data_out, ['coordinates.npy', 'charger_ids.npy', 'edgelist_from.npy', 'edgelist_to.npy'])
 
     if not valid:
-        logger.info(
-            f'Neccessary files for plotting are not available; Missing file: {missing}. \nMake sure to use the correct data_out folder!')
+        logger.info(f'Missing files: {missing}.')
         return
 
     coordinates = np.load(os.path.join(data_out, 'coordinates.npy'))

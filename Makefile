@@ -1,22 +1,38 @@
+DATA_OUT = data_out
+DATA_IN = data
+CONFIG = config.yaml
+COLOR = \033[0;34m
+VERBOSE = ON
+
+export VERBOSE
+
+# Clean only DATA_OUT folder
+clean_data:
+	@echo "$(COLOR)Clean data...\033[0m"
+	rm -rf data_out/*.npy
+	rm -rf data_out/*.png
+	rm -rf data_out/*.p
+
 # Clean complete project
-clean:
+clean: clean_data
+	@echo "$(COLOR)Clean...\033[0m"
 	$(MAKE) -C backend/ clean
 	$(MAKE) -C cpp_backend/ clean
 	rm -rf .vscode
 	rm -rf .pytest_cache
 	rm -rf .idea
-	rm -rf data_out/*.npy
-	rm -rf data_out/*.png
-	rm -rf data_out/*.csv
-	rm -rf data_out/*.p
 
 # Compile c++ backend
-compile:
+compile: clean
+	@echo "$(COLOR)Compile...\033[0m"
 	$(MAKE) -C cpp_backend/ compile
 
-# Generate and evaluate mdp from dataset
+# Generate mdp from dataset
 generate:
-	python3 -W ignore gen_mdp.py -d_in data -d_out data_out -c config.yaml --plot
+	@echo "$(COLOR)Generate...\033[0m"
+	python3 -W ignore gen_mdp.py -d_in $(DATA_IN) -d_out $(DATA_OUT) -c $(CONFIG) --plot
 
+# Evaluate and test policy
 evaluate:
-	python3 -W ignore eval_mdp.py -d_out data_out -c config.yaml --plot
+	@echo "$(COLOR)Evaluate...\033[0m"
+	python3 -W ignore eval_mdp.py -d_out $(DATA_OUT) -c $(CONFIG) --plot

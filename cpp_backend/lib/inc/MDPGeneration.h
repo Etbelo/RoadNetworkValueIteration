@@ -29,14 +29,15 @@ namespace backend {
  * @param[in] max_actions Maximum number of actions in mdp
  * @param[in] data_out Data out directory to store P matrix in
  * @param[in] num_charges Maximum possible charge
- * @param[in] max_charge Charge cost of maximum edge distance max_dist
+ * @param[in] max_charge_cost Charge cost of maximum edge distance max_dist
+ * @param[in] direct_charge Directly increase charge when moving to charger
  * @param[in] p_travel Probability of travelling to correct neighbor
  */
 auto generate_mdp(bool *is_charger_data, int *T_indptr, int *T_indices,
-                  float *T_data, const int T_nnz, const int num_nodes,
-                  const float min_dist, const float max_dist,
-                  const int max_actions, char data_out[], const int num_charges,
-                  const int max_charge, const float p_travel) -> void;
+                  float *T_data, int T_nnz, int num_nodes, float min_dist,
+                  float max_dist, int max_actions, char data_out[],
+                  int num_charges, int max_charge_cost, bool direct_charge,
+                  float p_travel) -> void;
 
 /**
  * @brief Generate Markov Decision Process and returning it as P_row, P_col, and
@@ -50,7 +51,8 @@ auto generate_mdp(bool *is_charger_data, int *T_indptr, int *T_indices,
  * @param[in] max_dist Maximum distance between two nodes
  * @param[in] max_actions Maximum number of actions in mdp
  * @param[in] num_charges Maximum possible charge
- * @param[in] max_charge Charge cost of maximum edge distance max_dist
+ * @param[in] max_charge_cost Charge cost of maximum edge distance max_dist
+ * @param[in] direct_charge Directly increase charge when moving to charger
  * @param[in] p_travel Probability of travelling to correct neighbor
  * @return std::tuple<std::vector<unsigned int>, std::vector<unsigned int>,
  * std::vector<float>>
@@ -58,8 +60,8 @@ auto generate_mdp(bool *is_charger_data, int *T_indptr, int *T_indices,
 auto construct_p(bool *is_charger_data,
                  Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> T,
                  int num_states, int num_nodes, float min_dist, float max_dist,
-                 int max_actions, int num_charges, int max_charge,
-                 float p_travel)
+                 int max_actions, int num_charges, int max_charge_cost,
+                 bool direct_charge, float p_travel)
     -> std::tuple<std::vector<unsigned int>, std::vector<unsigned int>,
                   std::vector<float>>;
 
@@ -108,15 +110,18 @@ auto p_move_node(std::vector<unsigned int> *p_row,
  * @brief Get neighbor nodes and required charges from current node in state.
  *
  * @param[in,out] T Reference to constructed Eigen transition matrix (csr)
+ * @param[in,out] is_charger_data Pointer to list of nodes being chargers
  * @param[in] cur_node Current node of state
  * @param[in] min_dist Minimum distance between two nodes
  * @param[in] max_dist Maximum distance between two nodes
- * @param[in] max_charge Charge cost of maximum edge distance max_dist
+ * @param[in] max_charge_cost Charge cost of maximum edge distance max_dist
+ * @param[in] direct_charge Directly increase charge when moving to charger
  * @return std::pair<std::vector<int>, Eigen::ArrayXi> (neighbor nodes, charge
  * costs)
  */
 auto get_neighbors(Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> T,
-                   int cur_node, float min_dist, float max_dist, int max_charge)
+                   bool *is_charger_data, int cur_node, float min_dist,
+                   float max_dist, int max_charge_cost, bool direct_charge)
     -> std::pair<std::vector<int>, Eigen::ArrayXi>;
 
 /**

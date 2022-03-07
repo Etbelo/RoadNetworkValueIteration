@@ -14,7 +14,8 @@ auto generate_mdp(bool *is_charger_data, int *T_indptr, int *T_indices,
                   float *T_data, const int T_nnz, const int num_nodes,
                   const float min_dist, const float max_dist,
                   const int max_actions, char data_out[], const int num_charges,
-                  const int max_charge, const float p_travel) -> void {
+                  const int max_charge_cost, const bool direct_charge,
+                  const float p_travel) -> void {
     const auto num_states = num_nodes * num_nodes * num_charges;
 
 #ifdef VERBOSE
@@ -36,9 +37,9 @@ auto generate_mdp(bool *is_charger_data, int *T_indptr, int *T_indices,
     std::vector<unsigned int> p_col;
     std::vector<float> p_data;
 
-    std::tie(p_row, p_col, p_data) =
-        construct_p(is_charger_data, T, num_states, num_nodes, min_dist,
-                    max_dist, max_actions, num_charges, max_charge, p_travel);
+    std::tie(p_row, p_col, p_data) = construct_p(
+        is_charger_data, T, num_states, num_nodes, min_dist, max_dist,
+        max_actions, num_charges, max_charge_cost, direct_charge, p_travel);
 
 #ifdef VERBOSE
     std::cout << "[cpp backend] save data" << std::endl;
@@ -63,7 +64,8 @@ auto construct_p(bool *is_charger_data,
                  const int num_states, const int num_nodes,
                  const float min_dist, const float max_dist,
                  const int max_actions, const int num_charges,
-                 const int max_charge, const float p_travel)
+                 const int max_charge_cost, const bool direct_charge,
+                 const float p_travel)
     -> std::tuple<std::vector<unsigned int>, std::vector<unsigned int>,
                   std::vector<float>> {
     std::vector<unsigned int> p_row;
@@ -77,7 +79,8 @@ auto construct_p(bool *is_charger_data,
         Eigen::ArrayXi charge_costs;
 
         std::tie(next_nodes, charge_costs) =
-            get_neighbors(T, cur_node, min_dist, max_dist, max_charge);
+            get_neighbors(T, is_charger_data, cur_node, min_dist, max_dist,
+                          max_charge_cost, direct_charge);
 
         const auto is_charger = is_charger_data[cur_node];
 
@@ -179,8 +182,9 @@ auto p_move_node(std::vector<unsigned int> *p_row,
 }
 
 auto get_neighbors(Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> T,
-                   const int cur_node, const float min_dist,
-                   const float max_dist, const int max_charge)
+                   bool *is_charger_data, const int cur_node,
+                   const float min_dist, const float max_dist,
+                   const int max_charge_cost, const bool direct_charge)
     -> std::pair<std::vector<int>, Eigen::ArrayXi> {
     std::vector<int> nodes;
     std::vector<int> charge_costs;
@@ -190,20 +194,30 @@ auto get_neighbors(Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> T,
     float t = 0.0;
 
     if (max_dist != min_dist) {
-        m = (max_charge - 1) / (max_dist - min_dist);
-        t = max_charge - m * max_dist;
+        m = (max_charge_cost - 1) / (max_dist - min_dist);
+        t = max_charge_cost - m * max_dist;
     }
 
     // Loop over non-zero elements in row: cur_node
     for (Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>>::InnerIterator
              it(T, cur_node);
          it; ++it) {
+        // Add neighbor to output array
         nodes.push_back(static_cast<int>(it.col()));
-        charge_costs.push_back(
-            static_cast<int>(std::floor(m * it.value() + t)));
+
+        // Basic charge cost for neighbor
+        auto charge_cost = static_cast<int>(std::floor(m * it.value() + t));
+
+        // Reduced charge cost when moving to charger node
+        if (direct_charge && is_charger_data[it.col()]) {
+            charge_cost = std::max(charge_cost - 1, 0);
+        }
+
+        // Add charge cost to buffer array
+        charge_costs.push_back(charge_cost);
     }
 
-    // Create Eigen array from existing memory
+    // Create Eigen output array from existing memory
     Eigen::Map<Eigen::ArrayXi> charge_costs_arr(charge_costs.data(),
                                                 charge_costs.size());
 

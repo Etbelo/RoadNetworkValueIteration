@@ -75,8 +75,8 @@ _ffi = FFI()
 
 
 def generate_mdp(
-        chargers, T, num_nodes, min_dist, max_dist, max_actions, data_out, num_charges, max_charge,
-        p_travel):
+        chargers, T, num_nodes, min_dist, max_dist, max_actions, data_out, num_charges,
+        max_charge_cost, direct_charge, p_travel):
     '''! Call cpp backend function to generate a Markov Decision Process.
 
     @param chargers List of nodes being chargers
@@ -87,7 +87,8 @@ def generate_mdp(
     @param max_actions Maximum number of possible actions in mdp
     @param data_out Data out directory to store results in
     @param num_chargers Total number of maximum possible charges
-    @param max_charge Maximum charge cost associated with max_dist
+    @param max_charge_cost Maximum charge cost associated with max_dist
+    @param direct_charge Directly increase charge when moving to charger
     @param p_travel Probability of travelling to correct neighbor
     '''
 
@@ -104,7 +105,7 @@ def generate_mdp(
 
     cpp_interface.lib.cffi_generate_mdp(
         is_charger_data, T_indptr, T_indices, T_data, T.data.size, num_nodes, min_dist, max_dist,
-        max_actions, data_out_data, num_charges, max_charge, p_travel)
+        max_actions, data_out_data, num_charges, max_charge_cost, direct_charge, p_travel)
 
 
 def evaluate_mdp(num_states, P, num_nodes, max_actions, num_charges, alpha, error_min, num_blocks):

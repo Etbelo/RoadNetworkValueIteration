@@ -4,6 +4,6 @@ clean:
 
 compile: clean
 	mkdir -p build/
-	cd build/ && cmake -DCMAKE_BUILD_TYPE=Release ..
+	cd build/ && cmake ..
 	$(MAKE) -C build/
 	$(MAKE) -C build/ install

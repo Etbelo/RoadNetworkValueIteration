@@ -6,10 +6,12 @@ extern void cffi_generate_mdp(bool *is_charger_data, int *T_indptr,
                               int *T_indices, float *T_data, int T_nnz,
                               int num_nodes, float min_dist, float max_dist,
                               int max_actions, char data_out[], int num_charges,
-                              int max_charge, float p_travel) {
+                              int max_charge_cost, bool direct_charge,
+                              float p_travel) {
     backend::generate_mdp(is_charger_data, T_indptr, T_indices, T_data, T_nnz,
                           num_nodes, min_dist, max_dist, max_actions, data_out,
-                          num_charges, max_charge, p_travel);
+                          num_charges, max_charge_cost, direct_charge,
+                          p_travel);
 }
 
 extern void cffi_evaluate_mdp(int *pi_data, float *J_data, int *P_indptr,

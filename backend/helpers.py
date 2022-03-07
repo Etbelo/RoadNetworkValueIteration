@@ -19,18 +19,20 @@ def files_available(data_dir, files):
     @param data_dir Directory to search for files in
     @param files List of files to search for in data_dir directory
 
-    @return bool valid, str first missing file if not valid
+    @return bool valid, list of missing files
     '''
 
     valid = True
+    missing = []
 
     for file in files:
         path = os.path.join(data_dir, file)
-        valid &= os.path.isfile(path)
-        if not valid:
-            return False, path
+        file_valid = os.path.isfile(path)
+        valid &= file_valid
+        if not file_valid:
+            missing.append(path)
 
-    return valid, None
+    return valid, missing
 
 
 def travel(state, action, P, max_actions, static):
@@ -232,9 +234,8 @@ def compress_csr_graph(T):
                 else:
                     node_ind = np.where(
                         vertex_data[:, 1] == new_nodes[node])[0][0]
-                    # vertex_data[node_ind, 2] = min(
-                    #     vertex_data[node_ind, 2], total_dist)
-                    vertex_data[node_ind, 2] = 1
+                    vertex_data[node_ind, 2] = min(
+                        vertex_data[node_ind, 2], total_dist)
 
         T_data = np.vstack((T_data, vertex_data))
 
@@ -244,4 +245,4 @@ def compress_csr_graph(T):
 
     T_new = csr_matrix((data, (row, col)), shape=(vertices.size, vertices.size))
 
-    return T_new, row, col, valid, vertices.size
+    return T_new, row, col, valid, new_nodes, vertices.size

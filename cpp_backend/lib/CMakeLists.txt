@@ -1,7 +1,6 @@
 cmake_minimum_required (VERSION 3.0)
 
-# Enable verbose output of backend library
-set(VERBOSE ON)
+set(CMAKE_BUILD_TYPE Release)
 
 # If standalone compilation
 if(NOT DEFINED LIB_NAME)
