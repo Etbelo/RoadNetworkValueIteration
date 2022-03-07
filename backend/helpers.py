@@ -13,12 +13,19 @@ ch.setFormatter(logging.Formatter('[%(name)s] (%(levelname)s) %(message)s'))
 logger.addHandler(ch)
 
 
-def files_available(data_out, files):
+def files_available(data_dir, files):
+    '''! Test if all files are available in data_dir directory.
+
+    @param data_dir Directory to search for files in
+    @param files List of files to search for in data_dir directory
+
+    @return bool valid, str first missing file if not valid
+    '''
 
     valid = True
 
     for file in files:
-        path = os.path.join(data_out, file)
+        path = os.path.join(data_dir, file)
         valid &= os.path.isfile(path)
         if not valid:
             return False, path
@@ -27,6 +34,17 @@ def files_available(data_out, files):
 
 
 def travel(state, action, P, max_actions, static):
+    '''! Travel from state to next state given an action.
+
+    @param state State to travel from
+    @param action Action to take from state
+    @param P Probability matrix for (state + action -> state)
+    @param max_actions Maximum number of actions possible in mdp
+    @param static True: Static evaluation (Direct policy), False: Stochastic evluation 
+                    (Including stochastic next state)
+
+    @param return Next state
+    '''
 
     row_in_p = state * max_actions + action
 
@@ -49,6 +67,19 @@ def travel(state, action, P, max_actions, static):
 
 
 def path_from_policy(state, P, pi, num_nodes, max_actions, max_iter, static):
+    '''! Generate a path from given policy and state.
+
+    @param state State to start from
+    @param P Probability matrix for (state + action -> state)
+    @param pi Policy (List of actions for each state)
+    @param num_nodes Total number of nodes in the mdp
+    @param max_actions Maximum number of actions possible in mdp
+    @param max_iter Maximum number of allowed iterations until breaking the policy loop
+    @param static True: Static evaluation (Direct policy), False: Stochastic evluation 
+                    (Including stochastic next state)
+
+    @return List of states, List of nodes
+    '''
 
     iter = 0
 
@@ -75,11 +106,27 @@ def path_from_policy(state, P, pi, num_nodes, max_actions, max_iter, static):
 
 
 def encode_state(charge, tar_node, cur_node, num_nodes):
+    '''! Encode state tuple to one number.
+
+    @param charge Current charge in state
+    @param tar_node Target node to find
+    @param cur_node Current node in state
+    @param num_nodes Total number of nodes in the mdp
+
+    @return State number
+    '''
 
     return charge * (num_nodes ** 2) + tar_node * num_nodes + cur_node
 
 
 def decode_state(state, num_nodes):
+    '''! Decode state number to tuple.
+
+    @param state State number to decode
+    @param num_nodes Total number of nodes in the mdp
+
+    @param Tuple of state elements (charge, tar_node, cur_node)
+    '''
 
     charge = state // (num_nodes ** 2)
     tar_node = state % (num_nodes ** 2) // num_nodes
@@ -89,6 +136,13 @@ def decode_state(state, num_nodes):
 
 
 def get_random_chargers(num_nodes, num_chargers):
+    '''! Create list of random chargers in the current mdp.
+
+    @param num_nodes Total number of nodes in the mdp
+    @param num_chargers Total number of required random chargers
+
+    @return List of node ids that have been declared chargers
+    '''
 
     charger_ids = np.random.choice(a=np.arange(
         num_nodes), size=min(num_nodes // 2, num_chargers), replace=False)
@@ -100,6 +154,12 @@ def get_random_chargers(num_nodes, num_chargers):
 
 
 def get_max_u(T):
+    '''! Get the maximum number of actions possible in the current mdp.
+
+    @param T Transition matrix (node -> node)
+
+    @return Number of maximum actions (Including action = 0: Staying) 
+    '''
 
     num_transitions = (T > 0.0).sum(0)
 
@@ -110,6 +170,15 @@ def get_max_u(T):
 
 
 def get_transition_matrix(num_nodes, T_row, T_col, T_dist):
+    '''! Create transition matrix from edgelists.
+
+    @param num_nodes Total number of nodes in the mdp
+    @param T_row Edgelist from
+    @param T_col Edgelist to
+    @param T_dist Distance of edges_from -> edges_to
+
+    @return Transition matrix in sparse CSR format
+    '''
 
     # Make matrix bi-directional
     data = np.hstack((T_dist, T_dist))
@@ -121,6 +190,13 @@ def get_transition_matrix(num_nodes, T_row, T_col, T_dist):
 
 
 def compress_csr_graph(T):
+    '''! Compress sparse CSR matrix by removing degree 2 nodes.
+
+    @param T Transition matrix (node -> node)
+
+    @return New transition matrix in CSR format, new edgelist_from, new egdelist_to, 
+            new number of nodes
+    '''
 
     T_data = np.zeros((0, 3))
 

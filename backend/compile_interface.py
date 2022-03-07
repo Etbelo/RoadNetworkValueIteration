@@ -2,6 +2,10 @@ from cffi import FFI
 
 
 def compile_interface(verbose=True):
+    '''! Define interface to c++ backend functions as defined in Interface.h
+
+    @param verbose Print compile output to the console
+    '''
 
     ffi = FFI()
 

@@ -77,6 +77,19 @@ _ffi = FFI()
 def generate_mdp(
         chargers, T, num_nodes, min_dist, max_dist, max_actions, data_out, num_charges, max_charge,
         p_travel):
+    '''! Call cpp backend function to generate a Markov Decision Process.
+
+    @param chargers List of nodes being chargers
+    @param T Transition matrix in scipy csr format
+    @param num_nodes Total number of nodes in mdp
+    @param min_dist Minimum distance between two nodes
+    @param max_dist Maximum distance between two nodes
+    @param max_actions Maximum number of possible actions in mdp
+    @param data_out Data out directory to store results in
+    @param num_chargers Total number of maximum possible charges
+    @param max_charge Maximum charge cost associated with max_dist
+    @param p_travel Probability of travelling to correct neighbor
+    '''
 
     # Transition matrix
     T_indptr = _ffi.cast("int*", T.indptr.ctypes.data)
@@ -95,6 +108,19 @@ def generate_mdp(
 
 
 def evaluate_mdp(num_states, P, num_nodes, max_actions, num_charges, alpha, error_min, num_blocks):
+    '''! Call cpp backend to evaluate Markov Decision Process and return the policy and total cost arrays.
+
+    @param num_states Total number of states in mdp
+    @param P Probability matrix in scipy csr format
+    @param num_nodes Total number of nodes in mdp
+    @param max_actions Maximum number of possible actions in mdp
+    @param num_charges Total number of maximum possible charges
+    @param alpha Discount factor for value iteration
+    @param error_min Minimum error as target for greedy algorithm
+    @param num_blocks Number of statespace blocks for threads to work on
+
+    @return (policy array, cost array) in numpy format for all states
+    '''
 
     # Transition matrix
     P_indptr = _ffi.cast("int*", P.indptr.ctypes.data)

@@ -1,8 +1,8 @@
 
 #include "MDPValueIteration.h"
 
-#include <algorithm>  // sdt::max_element
-#include <cmath>      // std::floor, std::max, std::min, std::exp, std::abs
+#include <algorithm>  // std::max, std::min,
+#include <cmath>      // std::floor, std::abs
 #include <iostream>   // std::cout, std::endl
 
 #include "omp.h"
@@ -101,8 +101,8 @@ auto update_block(const int state_low, const int state_high,
         int pi_temp = 0;
 
         // Retrieve state information
-        int charge, tar_node, cur_node;
-        std::tie(charge, tar_node, cur_node) =
+        int cur_charge, tar_node, cur_node;
+        std::tie(cur_charge, tar_node, cur_node) =
             decode_state(state, num_nodes, num_nodes_sq);
 
         // Loop over all actions
@@ -111,7 +111,7 @@ auto update_block(const int state_low, const int state_high,
             float J_cur = 0.0;
 
             // Calculate current stage cost
-            const auto g = stage_cost(charge, tar_node, cur_node, action);
+            const auto g = stage_cost(cur_charge, tar_node, cur_node, action);
             const auto row_in_P = state * max_actions + action;
             float row_sum = 0.0;
 

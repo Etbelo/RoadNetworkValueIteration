@@ -1,10 +1,9 @@
 #include "MDPGeneration.h"
 
-#include <algorithm>  // sdt::max_element
+#include <algorithm>  // std::max, std::min
 #include <array>      // std::array
-#include <cmath>      // std::floor, std::max, std::min, std::exp, std::abs
+#include <cmath>      // std::floor
 #include <iostream>   // std::cout, std::endl
-#include <numeric>    // std::iota
 
 #include "npy.hpp"
 #include "omp.h"
@@ -180,8 +179,8 @@ auto p_move_node(std::vector<unsigned int> *p_row,
 }
 
 auto get_neighbors(Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> T,
-                   const int node, const float min_dist, const float max_dist,
-                   const int max_charge)
+                   const int cur_node, const float min_dist,
+                   const float max_dist, const int max_charge)
     -> std::pair<std::vector<int>, Eigen::ArrayXi> {
     std::vector<int> nodes;
     std::vector<int> charge_costs;
@@ -195,9 +194,9 @@ auto get_neighbors(Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> T,
         t = max_charge - m * max_dist;
     }
 
-    // Loop over non-zero elements in row node
+    // Loop over non-zero elements in row: cur_node
     for (Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>>::InnerIterator
-             it(T, node);
+             it(T, cur_node);
          it; ++it) {
         nodes.push_back(static_cast<int>(it.col()));
         charge_costs.push_back(
