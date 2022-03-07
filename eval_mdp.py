@@ -79,12 +79,16 @@ def main(plot, show_fig, force, config_file, data_out):
     # Test Policy
     # -----------------------------------------------------------
 
-    # Test specific target using the evaluated policy
-    start_charge = 7
-    start_tar_node = 32
-    start_cur_node = 4
+    # Test specific state using the aquired policy
+    start_charge = params['test']['start_charge']
+    start_tar_node = params['test']['target_node']
+    start_cur_node = params['test']['start_node']
 
     state = encode_state(start_charge, start_tar_node, start_cur_node, data['num_nodes'])
+
+    if state > data['num_states']:
+        logger.error(f'Error in test policy: state = {state} > num_states')
+        return
 
     # Generate path from policy and output the result
     logger.info('test policy')
@@ -92,7 +96,8 @@ def main(plot, show_fig, force, config_file, data_out):
     path_states, path_nodes = path_from_policy(
         state, P, pi, data['num_nodes'],
         data['max_actions'],
-        static=True)
+        params['test']['max_iter'],
+        params['test']['static_test'])
 
     logger.info('total path')
 
@@ -137,7 +142,7 @@ def main(plot, show_fig, force, config_file, data_out):
         plt.plot(coordinates[0, start_tar_node],
                  coordinates[1, start_tar_node], 'rD')
 
-        plt.legend(['Policy path', 'Charger Node', 'Start Node', 'Target Node'])
+        plt.legend(['policy path', 'charger node', 'start node', 'target node'])
 
         if show_fig:
             plt.show()

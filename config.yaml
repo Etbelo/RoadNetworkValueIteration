@@ -10,3 +10,10 @@ evaluate:
   alpha: 0.95             # Discount factor for value iteration
   error_min: 0.001        # Error at which to break greedy algorithm
   num_blocks: 100         # Number of blocks to split statespace in
+
+test:
+  static_test: True       # Static or stochastic test of aquired policy
+  start_charge: 7         # Charge of state to test policy with
+  start_node: 14           # Start node of state to test policy with
+  target_node: 32         # Target node of state to test policy with
+  max_iter: 200           # Maximum tries before stopping policy iteration

@@ -26,7 +26,7 @@ def files_available(data_out, files):
     return valid, None
 
 
-def travel(state, action, P, max_actions, static=False):
+def travel(state, action, P, max_actions, static):
 
     row_in_p = state * max_actions + action
 
@@ -43,14 +43,12 @@ def travel(state, action, P, max_actions, static=False):
 
     # Stochastic next state
     p_total = np.sum(p_next_states)
-
-    if 1.0 < p_total < 1.1:
-        p_next_states = [p / p_total for p in p_next_states]
+    p_next_states = [p / p_total for p in p_next_states]
 
     return np.random.choice(next_states, p=p_next_states)
 
 
-def path_from_policy(state, P, pi, num_nodes, max_actions, static=False):
+def path_from_policy(state, P, pi, num_nodes, max_actions, max_iter, static):
 
     iter = 0
 
@@ -60,7 +58,7 @@ def path_from_policy(state, P, pi, num_nodes, max_actions, static=False):
 
     goal_reached = False
 
-    while not goal_reached and iter < 200 and charge != 0:
+    while not goal_reached and iter < max_iter and charge != 0:
         iter += 1
 
         try:
