@@ -1,10 +1,11 @@
 DATA_OUT = data_out
 DATA_IN = data
 CONFIG = config.yaml
-COLOR = \033[0;34m
 VERBOSE = ON
 
 export VERBOSE
+
+COLOR = \033[0;34m
 
 # Clean only DATA_OUT folder
 clean_data:
