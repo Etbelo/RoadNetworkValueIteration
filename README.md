@@ -5,7 +5,8 @@
 * System Requirements: Ubuntu 20.04.4 LTS
 
 ```bash
-sudo apt-get install libblas-dev liblapack-dev
+sudo apt update
+sudo apt install -y build-essential cmake libblas-dev liblapack-dev liblapacke-dev libomp-dev
 ```
 
 * Python requirements
