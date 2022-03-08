@@ -2,7 +2,7 @@
 
 ## Requirements
 
-* System Requirements: Ubuntu 21.04
+* System Requirements: Ubuntu 20.04.4 LTS
 
 ```bash
 sudo apt-get install libblas-dev liblapack-dev
