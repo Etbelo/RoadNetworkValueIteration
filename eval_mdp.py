@@ -60,6 +60,8 @@ def main(plot, show_fig, force, config_file, data_out):
     policy_exists = os.path.isfile(os.path.join(data_out, 'pi.npy'))
 
     if not policy_exists or force:
+
+        # Call backend
         pi, J = evaluate_mdp(
             data['num_states'],
             P, data['num_nodes'],

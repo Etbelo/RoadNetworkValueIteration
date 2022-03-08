@@ -130,6 +130,10 @@ def main(plot, show_fig, config_file, data_out, data_in):
 
     logger.info('generate mdp')
 
+    # Create output directory
+    create_folder(data_out)
+
+    # Call backend
     generate_mdp(
         chargers, T, num_nodes, min_dist, max_dist, max_u, data_out,
         params['generate']['num_charges'],

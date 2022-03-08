@@ -13,6 +13,17 @@ ch.setFormatter(logging.Formatter('[%(name)s] (%(levelname)s) %(message)s'))
 logger.addHandler(ch)
 
 
+def create_folder(directory):
+    '''! Create directory if it does not exist already.
+
+    @param directory Directory path to create
+    '''
+
+    if not os.path.exists(directory):
+        logger.info(f'Create folder: {directory}')
+        os.makedirs(directory)
+
+
 def files_available(data_dir, files):
     '''! Test if all files are available in data_dir directory.
 

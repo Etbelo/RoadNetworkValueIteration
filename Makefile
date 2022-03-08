@@ -10,9 +10,7 @@ COLOR = \033[0;34m
 # Clean only DATA_OUT folder
 clean_data:
 	@echo "$(COLOR)Clean data...\033[0m"
-	rm -rf data_out/*.npy
-	rm -rf data_out/*.png
-	rm -rf data_out/*.p
+	rm -rf $(DATA_OUT)/*
 
 # Clean complete project
 clean: clean_data
