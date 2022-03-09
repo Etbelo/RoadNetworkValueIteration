@@ -1,9 +1,5 @@
 clean:
-	$(MAKE) -C lib/ clean
-	rm -rf doc
-	rm -rf build* debug* release*
-	rm -f CMakeLists.txt.user
-	rm -rf .vs/
+	rm -rf build
 
 compile: clean
 	mkdir -p build/

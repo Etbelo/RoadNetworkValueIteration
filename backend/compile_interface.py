@@ -22,8 +22,10 @@ def compile_interface(verbose=True):
                               float alpha, float error_min, int num_blocks);""")
 
     ffi.set_source(
-        "cpp_interface", """ #include "Interface.h" """, include_dirs=['inc'],
-        libraries=['backend'],
+        "cpp_interface",
+        """ #include "Interface.h" """,
+        include_dirs=['inc'],
+        libraries=['cpp_backend'],
         library_dirs=['lib'],
         extra_link_args=['-Wl,-rpath=$ORIGIN/lib', '-fopenmp'],
         extra_compile_args=['-O3', '-march=native', '-ffast-math', '-fopenmp', '-D use_openmp'],

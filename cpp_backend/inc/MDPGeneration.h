@@ -4,11 +4,11 @@
 #include <Eigen/Dense>  // Eigen::Map, Eigen::MatrixXf, Eigen::VectorXf, Eigen::ArrayXi
 #include <Eigen/Sparse>  // Eigen::SparseMatrix
 #include <iostream>      // std::cout, std::endl
-#include <tuple>         // std::tie, std::tuple
+#include <tuple>         // std::tuple
 #include <utility>       // std::pair
 #include <vector>        // std::vector
 
-namespace backend {
+namespace cpp_backend {
 
 /** \addtogroup MDPGeneration
  *  @{
@@ -33,11 +33,11 @@ namespace backend {
  * @param[in] direct_charge Directly increase charge when moving to charger
  * @param[in] p_travel Probability of travelling to correct neighbor
  */
-auto generate_mdp(bool *is_charger_data, int *T_indptr, int *T_indices,
-                  float *T_data, int T_nnz, int num_nodes, float min_dist,
-                  float max_dist, int max_actions, char data_out[],
-                  int num_charges, int max_charge_cost, bool direct_charge,
-                  float p_travel) -> void;
+auto GenerateMdp(bool *is_charger_data, int *T_indptr, int *T_indices,
+                 float *T_data, int T_nnz, int num_nodes, float min_dist,
+                 float max_dist, int max_actions, char data_out[],
+                 int num_charges, int max_charge_cost, bool direct_charge,
+                 float p_travel) -> void;
 
 /**
  * @brief Generate Markov Decision Process and returning it as P_row, P_col, and
@@ -57,11 +57,12 @@ auto generate_mdp(bool *is_charger_data, int *T_indptr, int *T_indices,
  * @return std::tuple<std::vector<unsigned int>, std::vector<unsigned int>,
  * std::vector<float>>
  */
-auto construct_p(bool *is_charger_data,
-                 Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> T,
-                 int num_states, int num_nodes, float min_dist, float max_dist,
-                 int max_actions, int num_charges, int max_charge_cost,
-                 bool direct_charge, float p_travel)
+auto ConstructP(
+    bool *is_charger_data,
+    const Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> &T,
+    int num_states, int num_nodes, float min_dist, float max_dist,
+    int max_actions, int num_charges, int max_charge_cost, bool direct_charge,
+    float p_travel)
     -> std::tuple<std::vector<unsigned int>, std::vector<unsigned int>,
                   std::vector<float>>;
 
@@ -78,10 +79,10 @@ auto construct_p(bool *is_charger_data,
  * @param[in] num_charges Maximum possible charge
  * @param[in] max_actions Maximum number of actions in mdp
  */
-auto p_stay_node(std::vector<unsigned int> *p_row,
-                 std::vector<unsigned int> *p_col, std::vector<float> *p_data,
-                 int cur_node, bool is_charger, int num_nodes, int num_charges,
-                 int max_actions) -> void;
+auto UpdateStayNode(std::vector<unsigned int> *p_row,
+                    std::vector<unsigned int> *p_col,
+                    std::vector<float> *p_data, int cur_node, bool is_charger,
+                    int num_nodes, int num_charges, int max_actions) -> void;
 
 /**
  * @brief Add values to probability matrix if action dictates to move to
@@ -99,17 +100,17 @@ auto p_stay_node(std::vector<unsigned int> *p_row,
  * @param[in] next_nodes List of possible next nodes
  * @param[in,out] charge_costs Reference to charge costs array
  */
-auto p_move_node(std::vector<unsigned int> *p_row,
-                 std::vector<unsigned int> *p_col, std::vector<float> *p_data,
-                 int cur_node, int action, int num_nodes, int num_charges,
-                 float p_travel, int max_actions,
-                 const std::vector<int> &next_nodes,
-                 Eigen::Ref<Eigen::ArrayXi> charge_costs) -> void;
+auto UpdateMoveNode(std::vector<unsigned int> *p_row,
+                    std::vector<unsigned int> *p_col,
+                    std::vector<float> *p_data, int cur_node, int action,
+                    int num_nodes, int num_charges, float p_travel,
+                    int max_actions, const std::vector<int> &next_nodes,
+                    const Eigen::ArrayXi &charge_costs) -> void;
 
 /**
  * @brief Get neighbor nodes and required charges from current node in state.
  *
- * @param[in,out] T Reference to constructed Eigen transition matrix (csr)
+ * @param[in] T Reference to constructed Eigen transition matrix (csr)
  * @param[in,out] is_charger_data Pointer to list of nodes being chargers
  * @param[in] cur_node Current node of state
  * @param[in] min_dist Minimum distance between two nodes
@@ -119,9 +120,10 @@ auto p_move_node(std::vector<unsigned int> *p_row,
  * @return std::pair<std::vector<int>, Eigen::ArrayXi> (neighbor nodes, charge
  * costs)
  */
-auto get_neighbors(Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> T,
-                   bool *is_charger_data, int cur_node, float min_dist,
-                   float max_dist, int max_charge_cost, bool direct_charge)
+auto get_neighbors(
+    const Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> &T,
+    bool *is_charger_data, int cur_node, float min_dist, float max_dist,
+    int max_charge_cost, bool direct_charge)
     -> std::pair<std::vector<int>, Eigen::ArrayXi>;
 
 /**
@@ -133,7 +135,7 @@ auto get_neighbors(Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> T,
  * @param[in] num_nodes Total number of nodes in mdp
  * @return int State number
  */
-auto encode_state(int charge, int tar_node, int cur_node, int num_nodes) -> int;
+auto get_state(int charge, int tar_node, int cur_node, int num_nodes) -> int;
 
 /**
  * @brief Get move probability to consider_node given that next_node is target.
@@ -151,6 +153,6 @@ auto get_move_p(int num_valid, int next_node, int consider_node, float p_travel)
 
 /** @}*/
 
-}  // namespace backend
+}  // namespace cpp_backend
 
 #endif  // __MDP_VALUE_ITERATION_H__

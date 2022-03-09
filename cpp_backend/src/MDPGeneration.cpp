@@ -8,14 +8,14 @@
 #include "npy.hpp"
 #include "omp.h"
 
-namespace backend {
+namespace cpp_backend {
 
-auto generate_mdp(bool *is_charger_data, int *T_indptr, int *T_indices,
-                  float *T_data, const int T_nnz, const int num_nodes,
-                  const float min_dist, const float max_dist,
-                  const int max_actions, char data_out[], const int num_charges,
-                  const int max_charge_cost, const bool direct_charge,
-                  const float p_travel) -> void {
+auto GenerateMdp(bool *is_charger_data, int *T_indptr, int *T_indices,
+                 float *T_data, const int T_nnz, const int num_nodes,
+                 const float min_dist, const float max_dist,
+                 const int max_actions, char data_out[], const int num_charges,
+                 const int max_charge_cost, const bool direct_charge,
+                 const float p_travel) -> void {
     const auto num_states = num_nodes * num_nodes * num_charges;
 
 #ifdef VERBOSE
@@ -33,11 +33,7 @@ auto generate_mdp(bool *is_charger_data, int *T_indptr, int *T_indices,
         num_nodes, num_nodes, T_nnz, T_indptr, T_indices, T_data);
 
     // Create probability matrix (state + action -> state)
-    std::vector<unsigned int> p_row;
-    std::vector<unsigned int> p_col;
-    std::vector<float> p_data;
-
-    std::tie(p_row, p_col, p_data) = construct_p(
+    const auto [p_row, p_col, p_data] = ConstructP(
         is_charger_data, T, num_states, num_nodes, min_dist, max_dist,
         max_actions, num_charges, max_charge_cost, direct_charge, p_travel);
 
@@ -59,13 +55,12 @@ auto generate_mdp(bool *is_charger_data, int *T_indptr, int *T_indices,
                           shape.size(), shape.data(), p_data);
 }
 
-auto construct_p(bool *is_charger_data,
-                 Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> T,
-                 const int num_states, const int num_nodes,
-                 const float min_dist, const float max_dist,
-                 const int max_actions, const int num_charges,
-                 const int max_charge_cost, const bool direct_charge,
-                 const float p_travel)
+auto ConstructP(
+    bool *is_charger_data,
+    const Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> &T,
+    const int num_states, const int num_nodes, const float min_dist,
+    const float max_dist, const int max_actions, const int num_charges,
+    const int max_charge_cost, const bool direct_charge, const float p_travel)
     -> std::tuple<std::vector<unsigned int>, std::vector<unsigned int>,
                   std::vector<float>> {
     std::vector<unsigned int> p_row;
@@ -75,10 +70,7 @@ auto construct_p(bool *is_charger_data,
     // Consider all nodes to move from
     for (auto cur_node = 0; cur_node < num_nodes; ++cur_node) {
         // Gather all next nodes and their required charges
-        std::vector<int> next_nodes;
-        Eigen::ArrayXi charge_costs;
-
-        std::tie(next_nodes, charge_costs) =
+        const auto [next_nodes, charge_costs] =
             get_neighbors(T, is_charger_data, cur_node, min_dist, max_dist,
                           max_charge_cost, direct_charge);
 
@@ -89,13 +81,13 @@ auto construct_p(bool *is_charger_data,
              ++action) {
             if (action == 0) {
                 // Allow to stay at current node: p = 1.0
-                p_stay_node(&p_row, &p_col, &p_data, cur_node, is_charger,
-                            num_nodes, num_charges, max_actions);
+                UpdateStayNode(&p_row, &p_col, &p_data, cur_node, is_charger,
+                               num_nodes, num_charges, max_actions);
             } else {
                 // Move to next node + spend charge: 0.0 <= p <= 1.0
-                p_move_node(&p_row, &p_col, &p_data, cur_node, action,
-                            num_nodes, num_charges, p_travel, max_actions,
-                            next_nodes, charge_costs);
+                UpdateMoveNode(&p_row, &p_col, &p_data, cur_node, action,
+                               num_nodes, num_charges, p_travel, max_actions,
+                               next_nodes, charge_costs);
             }
         }
     }
@@ -103,17 +95,18 @@ auto construct_p(bool *is_charger_data,
     return {p_row, p_col, p_data};
 }
 
-auto p_stay_node(std::vector<unsigned int> *p_row,
-                 std::vector<unsigned int> *p_col, std::vector<float> *p_values,
-                 const int cur_node, const bool is_charger, const int num_nodes,
-                 const int num_charges, const int max_actions) -> void {
+auto UpdateStayNode(std::vector<unsigned int> *p_row,
+                    std::vector<unsigned int> *p_col,
+                    std::vector<float> *p_values, const int cur_node,
+                    const bool is_charger, const int num_nodes,
+                    const int num_charges, const int max_actions) -> void {
     // Consider all current charges
     for (auto cur_charge = 0; cur_charge < num_charges; ++cur_charge) {
         // Consider all target nodes
         for (auto tar_node = 0; tar_node < num_nodes; ++tar_node) {
             // Encoded current state
             const auto state =
-                encode_state(cur_charge, tar_node, cur_node, num_nodes);
+                get_state(cur_charge, tar_node, cur_node, num_nodes);
 
             // Add value to probability matrix
             p_row->push_back(state * max_actions);
@@ -122,8 +115,8 @@ auto p_stay_node(std::vector<unsigned int> *p_row,
             if (is_charger) {
                 // If current node is charger: Increase charge while staying
                 const auto next_state =
-                    encode_state(std::min(cur_charge + 1, num_charges - 1),
-                                 tar_node, cur_node, num_nodes);
+                    get_state(std::min(cur_charge + 1, num_charges - 1),
+                              tar_node, cur_node, num_nodes);
 
                 p_col->push_back(next_state);
             } else {
@@ -134,12 +127,13 @@ auto p_stay_node(std::vector<unsigned int> *p_row,
     }
 }
 
-auto p_move_node(std::vector<unsigned int> *p_row,
-                 std::vector<unsigned int> *p_col, std::vector<float> *p_data,
-                 const int cur_node, const int action, const int num_nodes,
-                 const int num_charges, const float p_travel,
-                 const int max_actions, const std::vector<int> &next_nodes,
-                 Eigen::Ref<Eigen::ArrayXi> charge_costs) -> void {
+auto UpdateMoveNode(std::vector<unsigned int> *p_row,
+                    std::vector<unsigned int> *p_col,
+                    std::vector<float> *p_data, const int cur_node,
+                    const int action, const int num_nodes,
+                    const int num_charges, const float p_travel,
+                    const int max_actions, const std::vector<int> &next_nodes,
+                    const Eigen::ArrayXi &charge_costs) -> void {
     // Each action will result in one targeted next node
     const auto next_node = next_nodes.at(action - 1);
 
@@ -156,7 +150,7 @@ auto p_move_node(std::vector<unsigned int> *p_row,
             for (auto tar_node = 0; tar_node < num_nodes; ++tar_node) {
                 // Encoded current state
                 const auto state =
-                    encode_state(cur_charge, tar_node, cur_node, num_nodes);
+                    get_state(cur_charge, tar_node, cur_node, num_nodes);
 
                 // Next state: Consider all valid next nodes
                 for (auto i = 0; i < static_cast<int>(next_nodes.size()); ++i) {
@@ -167,8 +161,8 @@ auto p_move_node(std::vector<unsigned int> *p_row,
 
                         // State to move to
                         const auto next_state =
-                            encode_state(next_charges[i], tar_node,
-                                         next_nodes.at(i), num_nodes);
+                            get_state(next_charges[i], tar_node,
+                                      next_nodes.at(i), num_nodes);
 
                         // Add value to probability matrix
                         p_row->push_back(state * max_actions + action);
@@ -181,10 +175,10 @@ auto p_move_node(std::vector<unsigned int> *p_row,
     }
 }
 
-auto get_neighbors(Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> T,
-                   bool *is_charger_data, const int cur_node,
-                   const float min_dist, const float max_dist,
-                   const int max_charge_cost, const bool direct_charge)
+auto get_neighbors(
+    const Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> &T,
+    bool *is_charger_data, const int cur_node, const float min_dist,
+    const float max_dist, const int max_charge_cost, const bool direct_charge)
     -> std::pair<std::vector<int>, Eigen::ArrayXi> {
     std::vector<int> nodes;
     std::vector<int> charge_costs;
@@ -224,8 +218,8 @@ auto get_neighbors(Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> T,
     return {nodes, charge_costs_arr};
 }
 
-auto encode_state(const int charge, const int tar_node, const int cur_node,
-                  const int num_nodes) -> int {
+auto get_state(const int charge, const int tar_node, const int cur_node,
+               const int num_nodes) -> int {
     return num_nodes * num_nodes * charge + num_nodes * tar_node + cur_node;
 }
 
@@ -242,4 +236,4 @@ auto get_move_p(const int num_valid, const int next_node,
     return (1.0f - p_travel) / (static_cast<float>(num_valid) - 1.0f);
 }
 
-}  // namespace backend
+}  // namespace cpp_backend

@@ -7,13 +7,13 @@
 
 #include "omp.h"
 
-namespace backend {
+namespace cpp_backend {
 
-auto evaluate_mdp(int *pi_data, float *J_data, int *P_indptr, int *P_indices,
-                  float *P_data, const int P_nnz, const int num_nodes,
-                  const int max_actions, const int num_charges,
-                  const float alpha, const float error_min,
-                  const int num_blocks) -> void {
+auto EvaluateMdp(int *pi_data, float *J_data, int *P_indptr, int *P_indices,
+                 float *P_data, const int P_nnz, const int num_nodes,
+                 const int max_actions, const int num_charges,
+                 const float alpha, const float error_min, const int num_blocks)
+    -> void {
 #ifdef VERBOSE
     std::cout << std::endl << "[cpp backend] running" << std::endl;
 #endif
@@ -30,37 +30,40 @@ auto evaluate_mdp(int *pi_data, float *J_data, int *P_indptr, int *P_indices,
     Eigen::Map<Eigen::VectorXf> J(J_data, num_states);
 
     // Evaluate MDP using asynchronous value iteration
-    async_value_iteration(P, pi, J, num_states, num_nodes, max_actions, alpha,
-                          error_min, num_blocks);
+    AsyncValueIteration(P, pi, J, num_states, num_nodes, max_actions, alpha,
+                        error_min, num_blocks);
 }
 
-auto async_value_iteration(
-    Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> P,
+auto AsyncValueIteration(
+    const Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> &P,
     Eigen::Ref<Eigen::VectorXi> pi, Eigen::Ref<Eigen::VectorXf> J,
     const int num_states, const int num_nodes, const int max_actions,
     const float alpha, const float error_min, const int num_blocks) -> void {
     // Split statespace into blocks
-    // => Computation load dsitribution: num_blocks can be higher than
-    // num_threads Schedule decides over block order
+    // => Computation load dsitribution: blocks >= threads
+    // Schedule decides over block order
     // => Each thread handles dynamic number of blocks per iteration
 
-    const auto block_size = num_states / num_blocks;
+    const auto threads = omp_get_max_threads();
+    const auto blocks = std::max(threads, num_blocks);
+
+    const auto block_size = num_states / blocks;
     const auto num_nodes_sq = num_nodes * num_nodes;
     auto global_error = -1.0f;
-    std::vector<float> local_errors(omp_get_max_threads(), -1.0f);
+    std::vector<float> local_errors(threads, -1.0f);
 
     do {
 #pragma omp parallel for schedule(guided, 1)
-        for (int i = 0; i < num_blocks; ++i) {
+        for (int i = 0; i < blocks; ++i) {
             // State bounds for current block
             const auto state_low = i * block_size;
             const auto state_high =
-                i == num_blocks - 1 ? num_states : (i + 1) * block_size;
+                i == blocks - 1 ? num_states : (i + 1) * block_size;
 
             // Handle current block
             const auto block_error =
-                update_block(state_low, state_high, P, J, pi, max_actions,
-                             alpha, num_nodes, num_nodes_sq);
+                UpdateBlock(state_low, state_high, P, J, pi, max_actions, alpha,
+                            num_nodes, num_nodes_sq);
 
             // Update thread-local error with error of current block
             local_errors.at(omp_get_thread_num()) =
@@ -88,12 +91,14 @@ auto async_value_iteration(
     } while (global_error > error_min);
 }
 
-auto update_block(const int state_low, const int state_high,
-                  Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> P,
-                  Eigen::Ref<Eigen::VectorXf> J, Eigen::Ref<Eigen::VectorXi> pi,
-                  const int max_actions, const float alpha, const int num_nodes,
-                  const int num_nodes_sq) -> float {
-    float local_error = -1.0;
+auto UpdateBlock(
+    const int state_low, const int state_high,
+    const Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>> &P,
+    Eigen::Ref<Eigen::VectorXf> J, Eigen::Ref<Eigen::VectorXi> pi,
+    const int max_actions, const float alpha, const int num_nodes,
+    const int num_nodes_sq) -> float {
+    // Block-local error
+    float block_error = -1.0;
 
     // Loop over all states in current block
     for (auto state = state_low; state < state_high; ++state) {
@@ -101,9 +106,8 @@ auto update_block(const int state_low, const int state_high,
         int pi_temp = 0;
 
         // Retrieve state information
-        int cur_charge, tar_node, cur_node;
-        std::tie(cur_charge, tar_node, cur_node) =
-            decode_state(state, num_nodes, num_nodes_sq);
+        const auto state_tuple =
+            get_state_tuple(state, num_nodes, num_nodes_sq);
 
         // Loop over all actions
         for (int action = 0; action < max_actions; ++action) {
@@ -111,22 +115,24 @@ auto update_block(const int state_low, const int state_high,
             float J_cur = 0.0;
 
             // Calculate current stage cost
-            const auto g = stage_cost(cur_charge, tar_node, cur_node, action);
-            const auto row_in_P = state * max_actions + action;
-            float row_sum = 0.0;
+            const auto g = get_stage_cost(state_tuple, action);
 
             // Loop over non zero successor states to update action cost J_cur
+            const auto p_row = state * max_actions + action;
+            float p_row_sum = 0.0;
+
             for (Eigen::Ref<Eigen::SparseMatrix<float, Eigen::RowMajor>>::
-                     InnerIterator it(P, row_in_P);
+                     InnerIterator it(P, p_row);
                  it; ++it) {
-                row_sum += it.value();
+                // Update total row sum
+                p_row_sum += it.value();
 
                 // Update action cost with successor state it.col()
-                J_cur += it.value() * (g + alpha * J(it.col()));
+                J_cur += it.value() * (g + alpha * J[it.col()]);
             }
 
             // Consider state if action is valid and total cost is smaller
-            if (std::abs(row_sum - 1.0) < 0.1 &&
+            if (std::abs(p_row_sum - 1.0) < 0.1 &&
                 (J_cur < J_temp || J_temp == 0.0)) {
                 J_temp = J_cur;
                 pi_temp = action;
@@ -134,36 +140,37 @@ auto update_block(const int state_low, const int state_high,
         }
 
         // Update block-local error
-        local_error = std::max(local_error, std::abs(J(state) - J_temp));
+        block_error = std::max(block_error, std::abs(J[state] - J_temp));
 
         // Update state cost and policy
         J(state) = J_temp;
         pi(state) = pi_temp;
     }
 
-    return local_error;
+    return block_error;
 }
 
-auto decode_state(const int state, const int num_nodes, const int num_nodes_sq)
-    -> std::tuple<int, int, int> {
-    const auto charge = state / num_nodes_sq;
-    const auto tar_node = state % num_nodes_sq / num_nodes;
-    const auto cur_node = state % num_nodes_sq % num_nodes;
+auto get_state_tuple(const int state, const int num_nodes,
+                     const int num_nodes_sq) -> StateTuple {
+    StateTuple state_tuple;
 
-    return {charge, tar_node, cur_node};
+    state_tuple.cur_charge = state / num_nodes_sq;
+    state_tuple.tar_node = state % num_nodes_sq / num_nodes;
+    state_tuple.cur_node = state % num_nodes_sq % num_nodes;
+
+    return state_tuple;
 }
 
-auto stage_cost(const int charge, const int tar_node, const int cur_node,
-                const int action) -> float {
+auto get_stage_cost(StateTuple state_tuple, const int action) -> float {
     // Reward arriving at target
-    if (cur_node == tar_node && action == 0) {
+    if (state_tuple.cur_node == state_tuple.tar_node && action == 0) {
         return -100.0;
     }
 
     // Handle cost if not arrived at target yet
     float t_stage_cost = 0.0;
 
-    if (charge == 0) {
+    if (state_tuple.cur_charge == 0) {
         // Punish having no charge left
         t_stage_cost += 100;
     } else {
@@ -179,4 +186,4 @@ auto stage_cost(const int charge, const int tar_node, const int cur_node,
     return t_stage_cost;
 }
 
-}  // namespace backend
+}  // namespace cpp_backend
