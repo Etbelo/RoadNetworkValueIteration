@@ -18,5 +18,5 @@ test:
   pick_state: False         # Pick start and goal node from plot to be evaluated
   start_charge: 3           # Charge of state to test policy with
   start_node: 25            # Start node of state to test policy with
-  target_node: 10           # Target node of state to test policy with
+  target_node: 32           # Target node of state to test policy with
   max_iter: 100             # Maximum tries before stopping policy iteration
