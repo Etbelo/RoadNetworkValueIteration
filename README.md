@@ -1,8 +1,8 @@
 # RoadNetworkValueIteration
 
-This project is a demonstration for generating and evaluating Markov decision processes for road networks, where a car is carries charge/fuel that is spent while driving. A policy is generated using asynchronous value iteration utilizing the OpenMP C++ library.  The policy is generated with custom stage cost to change the behavior of travelling to charging stations for refueling. Furthermore, this project combines Python in the front-end and C++ in the back-end for optimal performance. 
+This project is a demonstration for generating and evaluating Markov decision processes for road networks, where a vehicle carries charge/fuel that is spent while driving. A policy is generated using asynchronous value iteration utilizing the OpenMP C++ library for multithreaded evaluation.  The policy is generated with custom stage cost to change the behavior of travelling to charging stations for refueling. Furthermore, this project combines Python in the front-end and C++ in the back-end for optimal performance. 
 
-However, this project is only meant as inspiration and study-tool as it is used for this purpose only.
+Overall, this project is only meant as inspiration and study-tool for performance oriented programming and value iteration, as it is used for this purpose only.
 
 ## Requirements
 
