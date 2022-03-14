@@ -10,7 +10,7 @@ Overall, this project is only meant as inspiration and study-tool for performanc
 
 ```bash
 sudo apt update
-sudo apt install -y build-essential cmake libblas-dev liblapack-dev liblapacke-dev libomp-dev
+sudo apt install -y python3-pip build-essential cmake libblas-dev liblapack-dev liblapacke-dev libomp-dev
 ```
 
 * Python requirements
