@@ -1,5 +1,9 @@
 # RoadNetworkValueIteration
 
+This project is a demonstration for generating and evaluating Markov decision processes for road networks, where a car is carries charge/fuel that is spent while driving. A policy is generated using asynchronous value iteration utilizing the OpenMP C++ library.  The policy is generated with custom stage cost to change the behavior of travelling to charging stations for refueling. Furthermore, this project combines Python in the front-end and C++ in the back-end for optimal performance. 
+
+However, this project is only meant as inspiration and study-tool as it is used for this purpose only.
+
 ## Requirements
 
 * System Requirements: Ubuntu 20.04.4 LTS
@@ -40,13 +44,13 @@ make compile
 * Generate Markov Decision Process
 
 ``` bash
-make generate
+make generate cfg={config}
 ```
 
 * Generate and test the policy: If the policy has been created and not been cleared, it is not generated again at consecutive calls.
 
 ``` bash
-make evaluate
+make evaluate cfg={config}
 ```
 
 * Clear local `DATA_OUT` folder
@@ -59,4 +63,20 @@ make clean_data
 
 ### Small Arena
 
+``` bash
+make compile
+make generate cfg=config_data_1.yaml
+make evaluate cfg=config_data_1.yaml
+``` 
+
 ![small_arena_policy](img/small_arena_policy.png)
+
+### California Road Network
+
+``` bash
+make compile
+make generate cfg=config_data_2.yaml
+make evaluate cfg=config_data_2.yaml
+``` 
+
+![road_cal_policy](img/road_cal_policy.png)

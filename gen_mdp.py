@@ -10,7 +10,6 @@ import pickle
 
 from backend.backend_cpp import *
 from backend.helpers import *
-from backend.visualization import *
 
 logger = logging.Logger('python')
 
@@ -165,8 +164,7 @@ def main(plot, show_fig, config_file, data_out, data_in):
         logger.info('plotting')
 
         # Plot compressed dataset
-        plot_graph('Network Graph',
-                   coordinates, T_row, T_col, show=False)
+        plot_graph('Network Graph', coordinates, T_row, T_col)
 
         # Charger locations
         plt.plot(coordinates[0, charger_ids],

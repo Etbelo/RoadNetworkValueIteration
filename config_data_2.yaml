@@ -1,0 +1,22 @@
+generate:
+  dataset: 'road_cal'       # Name of dataset folder
+  compress: True            # Compress original network (Removes degree 2 nodes)
+  num_charges: 20           # Maximum storage of charges
+  max_charge_cost: 1        # Charge usage for maximum distance (Linear sampling)
+  direct_charge: True       # Directly increase charge when moving to charger
+  p_travel: 0.9             # Probability to travel to correct neighbor
+  random_chargers: True     # Generate random chargers or use static chargers
+  num_chargers: 60          # Number of random chargers on the map
+
+evaluate:
+  alpha: 0.95               # Discount factor for value iteration
+  error_min: 0.001          # Error at which to break greedy algorithm
+  num_blocks: 100           # Number of blocks to split statespace in
+
+test:
+  static_test: True         # Static or stochastic test of aquired policy
+  pick_state: False         # Pick start and goal node from plot to be evaluated
+  start_charge: 19          # Charge of state to test policy with
+  start_node: 532           # Start node of state to test policy with
+  target_node: 223          # Target node of state to test policy with
+  max_iter: 200             # Maximum tries before stopping policy iteration

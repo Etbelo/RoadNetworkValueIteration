@@ -1,11 +1,9 @@
 DATA_OUT = data_out
 DATA_IN = data
-CONFIG = config.yaml
 VERBOSE = ON
+COLOR = \033[0;34m
 
 export VERBOSE
-
-COLOR = \033[0;34m
 
 # Clean only DATA_OUT folder
 clean_data:
@@ -29,9 +27,9 @@ compile: clean
 # Generate mdp from dataset
 generate:
 	@echo "$(COLOR)Generate...\033[0m"
-	python3 -W ignore gen_mdp.py -d_in $(DATA_IN) -d_out $(DATA_OUT) -c $(CONFIG) --plot
+	python3 -W ignore gen_mdp.py -d_in $(DATA_IN) -d_out $(DATA_OUT) -c $(cfg) --plot
 
 # Evaluate and test policy
 evaluate:
 	@echo "$(COLOR)Evaluate...\033[0m"
-	python3 -W ignore eval_mdp.py -d_out $(DATA_OUT) -c $(CONFIG) --plot
+	python3 -W ignore eval_mdp.py -d_out $(DATA_OUT) -c $(cfg) --plot

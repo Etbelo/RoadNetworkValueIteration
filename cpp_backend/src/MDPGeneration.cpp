@@ -4,9 +4,9 @@
 #include <array>      // std::array
 #include <cmath>      // std::floor
 #include <iostream>   // std::cout, std::endl
+#include <stdexcept>  // std::runtime_error
 
 #include "npy.hpp"
-#include "omp.h"
 
 namespace cpp_backend {
 
@@ -19,13 +19,15 @@ auto GenerateMdp(bool *is_charger_data, int *T_indptr, int *T_indices,
     const auto num_states = num_nodes * num_nodes * num_charges;
 
 #ifdef VERBOSE
-    std::cout << "[cpp backend] running" << std::endl;
-    std::cout << "[cpp backend] num_nodes: " << num_nodes << std::endl;
-    std::cout << "[cpp backend] num_states: " << num_states << std::endl;
-    std::cout << "[cpp backend] max_actions: " << max_actions << std::endl;
-    std::cout << "[cpp backend] num_charges: " << num_charges << std::endl;
-    std::cout << "[cpp backend] min_dist: " << min_dist << std::endl;
-    std::cout << "[cpp backend] max_dist: " << max_dist << std::endl;
+    std::cout << "[cpp backend] (INFO) running" << std::endl;
+    std::cout << "[cpp backend] (INFO) num_nodes: " << num_nodes << std::endl;
+    std::cout << "[cpp backend] (INFO) num_states: " << num_states << std::endl;
+    std::cout << "[cpp backend] (INFO) max_actions: " << max_actions
+              << std::endl;
+    std::cout << "[cpp backend] (INFO) num_charges: " << num_charges
+              << std::endl;
+    std::cout << "[cpp backend] (INFO) min_dist: " << min_dist << std::endl;
+    std::cout << "[cpp backend] (INFO) max_dist: " << max_dist << std::endl;
 #endif
 
     // Construct transition matrix from existing memory
@@ -37,22 +39,41 @@ auto GenerateMdp(bool *is_charger_data, int *T_indptr, int *T_indices,
         is_charger_data, T, num_states, num_nodes, min_dist, max_dist,
         max_actions, num_charges, max_charge_cost, direct_charge, p_travel);
 
+    // Save probability matrix to data_out in numpy format
 #ifdef VERBOSE
-    std::cout << "[cpp backend] save data" << std::endl;
+    std::cout << "[cpp backend] (INFO) save data" << std::endl;
 #endif
 
-    // Save data to data_out in numpy format
     std::array<long unsigned, 1> shape = {p_row.size()};
-    npy::SaveArrayAsNumpy(std::string(data_out) + "/p_row.npy", false,
-                          shape.size(), shape.data(), p_row);
+
+    try {
+        npy::SaveArrayAsNumpy(std::string(data_out) + "/p_row.npy", false,
+                              shape.size(), shape.data(), p_row);
+    } catch (const std::runtime_error &e) {
+        std::cerr
+            << "[cpp_backend] (ERROR) Error in SaveArrayAsNumpy for p_row: "
+            << e.what() << std::endl;
+    }
 
     shape = {p_col.size()};
-    npy::SaveArrayAsNumpy(std::string(data_out) + "/p_col.npy", false,
-                          shape.size(), shape.data(), p_col);
+    try {
+        npy::SaveArrayAsNumpy(std::string(data_out) + "/p_col.npy", false,
+                              shape.size(), shape.data(), p_col);
+    } catch (const std::runtime_error &e) {
+        std::cerr
+            << "[cpp_backend] (ERROR) Error in SaveArrayAsNumpy for p_col: "
+            << e.what() << std::endl;
+    }
 
     shape = {p_data.size()};
-    npy::SaveArrayAsNumpy(std::string(data_out) + "/p_data.npy", false,
-                          shape.size(), shape.data(), p_data);
+    try {
+        npy::SaveArrayAsNumpy(std::string(data_out) + "/p_data.npy", false,
+                              shape.size(), shape.data(), p_data);
+    } catch (const std::runtime_error &e) {
+        std::cerr
+            << "[cpp_backend] (ERROR) Error in SaveArrayAsNumpy for p_data: "
+            << e.what() << std::endl;
+    }
 }
 
 auto ConstructP(

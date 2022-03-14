@@ -1,7 +1,7 @@
 generate:
   dataset: 'small_arena'    # Name of dataset folder
   compress: False           # Compress original network (Removes degree 2 nodes)
-  num_charges: 8            # Maximum storage of charges
+  num_charges: 10           # Maximum storage of charges
   max_charge_cost: 1        # Charge usage for maximum distance (Linear sampling)
   direct_charge: True       # Directly increase charge when moving to charger
   p_travel: 0.9             # Probability to travel to correct neighbor
@@ -15,7 +15,8 @@ evaluate:
 
 test:
   static_test: True         # Static or stochastic test of aquired policy
-  start_charge: 2           # Charge of state to test policy with
+  pick_state: False         # Pick start and goal node from plot to be evaluated
+  start_charge: 3           # Charge of state to test policy with
   start_node: 25            # Start node of state to test policy with
-  target_node: 32           # Target node of state to test policy with
-  max_iter: 200             # Maximum tries before stopping policy iteration
+  target_node: 10           # Target node of state to test policy with
+  max_iter: 100             # Maximum tries before stopping policy iteration

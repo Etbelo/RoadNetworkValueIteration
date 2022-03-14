@@ -18,7 +18,7 @@ namespace cpp_backend {
  * @brief Generate Markov Decision Process by storing a probability matrix in
  * CSR numpy format to data_out directory.
  *
- * @param[in,out] is_charger_data Pointer to list of nodes being chargers
+ * @param[in,out] is_charger_data Pointer to list of nodes that are chargers
  * @param[in,out] T_indptr Pointer to indptr list of T matrix (np csr)
  * @param[in,out] T_indices Pointer to indices list of T matrix (np csr)
  * @param[in,out] T_data Pointer to data list of T matrix (np csr)
@@ -43,7 +43,7 @@ auto GenerateMdp(bool *is_charger_data, int *T_indptr, int *T_indices,
  * @brief Generate Markov Decision Process and returning it as P_row, P_col, and
  * P_data arrays that can be further processed.
  *
- * @param[in,out] is_charger_data Pointer to list of nodes being chargers
+ * @param[in,out] is_charger_data Pointer to list of nodes that are chargers
  * @param[in,out] T Reference to constructed T matrix (Eigen csr)
  * @param[in] num_states Total number of states in mdp
  * @param[in] num_nodes Total number of nodes in mdp
@@ -111,7 +111,7 @@ auto UpdateMoveNode(std::vector<unsigned int> *p_row,
  * @brief Get neighbor nodes and required charges from current node in state.
  *
  * @param[in] T Reference to constructed Eigen transition matrix (csr)
- * @param[in,out] is_charger_data Pointer to list of nodes being chargers
+ * @param[in,out] is_charger_data Pointer to list of nodes that are chargers
  * @param[in] cur_node Current node of state
  * @param[in] min_dist Minimum distance between two nodes
  * @param[in] max_dist Maximum distance between two nodes

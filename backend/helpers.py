@@ -2,6 +2,7 @@ import logging
 import os
 
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.sparse import csr_matrix
 
 logger = logging.Logger('python')
@@ -59,20 +60,21 @@ def travel(state, action, P, max_actions, static):
     @param return Next state
     '''
 
+    # Retrieve next possible states
     row_in_p = state * max_actions + action
-
     next_states = P[row_in_p].nonzero()[1]
 
     if next_states.size == 0:
         raise ValueError('State has no successors')
 
+    # Retrieve probabilities for next states
     p_next_states = [P[row_in_p, next_state] for next_state in next_states]
 
-    # Static next state
+    # Static next state: No uncertainties
     if static:
         return next_states[np.argmax(p_next_states)]
 
-    # Stochastic next state
+    # Stochastic next state: Include state uncertainties
     p_total = np.sum(p_next_states)
     p_next_states = [p / p_total for p in p_next_states]
 
@@ -257,3 +259,142 @@ def compress_csr_graph(T):
     T_new = csr_matrix((data, (row, col)), shape=(vertices.size, vertices.size))
 
     return T_new, row, col, valid, new_nodes, vertices.size
+
+
+def plot_graph(title, coordinates, start_ids, end_ids):
+    '''! Create plot of lines for each edge defined by start_ids and 
+    end_ids and nodes at specific coordinates.
+
+    @param title Plot title headling
+    @param coordinates Array of coordinates for each node
+    @param start_ids Array of nodes providing edgelist_from
+    @param end_ids Array of nodes prividing edgelist_to
+
+    @return Figure handle
+    '''
+
+    # Compute quiver coordinates
+    num_edges = start_ids.size
+    quivers = np.zeros((num_edges, 4), dtype=np.float32)
+
+    for i, (start, end) in enumerate(zip(start_ids, end_ids)):
+        quivers[i, 0:2] = coordinates[:, start]
+        quivers[i, 2:4] = coordinates[:, end] - coordinates[:, start]
+
+    # Create figure and title
+    fig = plt.figure(figsize=(10, 10))
+    fig.suptitle(title)
+
+    quiver_width = 0.004
+
+    if num_edges > 100:
+        quiver_width = 0.001
+
+    # Plot quivers for node connections
+    plt.quiver(quivers[:, 0],
+               quivers[:, 1],
+               quivers[:, 2],
+               quivers[:, 3],
+               color='black',
+               headwidth=1,
+               headlength=0,
+               linewidth=0.5,
+               width=quiver_width,
+               scale_units='xy',
+               scale=1.0,
+               angles='xy')
+
+    # Update plot configuration
+    plt.axis('equal')
+    plt.xlim([np.min(coordinates[0, :])-1.0, np.max(coordinates[0, :])+1.0])
+    plt.ylim([np.min(coordinates[1, :])-1.0, np.max(coordinates[1, :])+1.0])
+    plt.xlabel('latitude')
+    plt.ylabel('longitude')
+
+    return fig
+
+
+def find_closest_node(coordinates, ref_point):
+    '''! Linear search node id of point in coordinates closest to ref_point
+
+    @param coordinates Array of coordinates for each node
+    @param ref_point Reference coordiante to search for
+
+    @return min_node id
+    '''
+
+    min_node = 0
+    min_dist = np.inf
+
+    for i in range(coordinates.shape[1]):
+        dist = np.linalg.norm(ref_point - coordinates[:, i])
+
+        if dist < min_dist:
+            min_dist = dist
+            min_node = i
+
+    return min_node
+
+
+def test_policy(
+        start_charge, start_tar_node, start_cur_node, data, params, coordinates, charger_ids,
+        data_out, P, pi):
+    '''! Test policy by generating path either statistically or statically and adding visualization
+    to current figure handle.
+
+    @param start_charge Charge to start with
+    @param start_tar_node Target node
+    @param start_cur_node Start node
+    @param data Generated data object
+    @param params General parameter object
+    @param coordinates Array of coordinates for each node
+    @param charger_ids Array of nodes ids that are chargers
+    @param data_out Data out directory
+    @param P Probability matrix of MDP
+    @param pi Generate policy to test state with
+    '''
+
+    state = encode_state(start_charge, start_tar_node, start_cur_node, data['num_nodes'])
+
+    if state > data['num_states']:
+        logger.error(f'Error in test policy: state = {state} > num_states')
+        return
+
+    # Generate path from policy and output the result
+    logger.info(
+        f'test policy: start_node={start_cur_node}, target_node={start_tar_node}, start_charge: {start_charge}')
+
+    path_states, path_nodes = path_from_policy(
+        state, P, pi, data['num_nodes'],
+        data['max_actions'],
+        params['test']['max_iter'],
+        params['test']['static_test'])
+
+    logger.info('total path')
+
+    for path_state in path_states:
+        charge, tar_node, cur_node = decode_state(path_state, data['num_nodes'])
+        logger.info(f'step > \t(charge: {charge}, tar_node: {tar_node}, cur_node: {cur_node})')
+
+    # Path locations
+    plt.plot(coordinates[0, path_nodes],
+             coordinates[1, path_nodes], 'go-', linewidth=3.0)
+
+    # Charger locations
+    plt.plot(coordinates[0, charger_ids],
+             coordinates[1, charger_ids], 'bs')
+
+    # Start location
+    plt.plot(coordinates[0, start_cur_node],
+             coordinates[1, start_cur_node], 'gD')
+
+    # Target location
+    plt.plot(coordinates[0, start_tar_node],
+             coordinates[1, start_tar_node], 'rD')
+
+    plt.legend(
+        ['policy path', 'charger node',
+         f'start_node={start_cur_node} \nstart_charge={start_charge}',
+         f'target_node={start_tar_node}'])
+
+    plt.savefig(os.path.join(data_out, 'network_graph_policy.png'), dpi=300)

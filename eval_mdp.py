@@ -1,6 +1,9 @@
 import time
 import argparse
 import os
+from tracemalloc import start
+from unicodedata import numeric
+from matplotlib.pyplot import quiver
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -9,7 +12,6 @@ import yaml
 
 from backend.backend_cpp import *
 from backend.helpers import *
-from backend.visualization import *
 
 
 logger = logging.Logger('python')
@@ -26,7 +28,7 @@ def main(plot, show_fig, force, config_file, data_out):
     logger.info('running')
 
     # -----------------------------------------------------------
-    # Read Parameters
+    # Read Files and Parameters
     # -----------------------------------------------------------
 
     params = {}
@@ -36,6 +38,8 @@ def main(plot, show_fig, force, config_file, data_out):
             params = yaml.safe_load(file)
         except Exception as e:
             logger.error(f'Parameter exception: {e}')
+
+    logger.info(f'params: {params}')
 
     valid, missing = files_available(
         data_out, ['p_params.p', 'p_row.npy', 'p_col.npy', 'p_data.npy'])
@@ -54,7 +58,7 @@ def main(plot, show_fig, force, config_file, data_out):
     P = csr_matrix((p_data, (p_row, p_col)), shape=data['p_shape'])
 
     # -----------------------------------------------------------
-    # Evaluate MDP
+    # Evaluate MDP -> Generate Policy
     # -----------------------------------------------------------
 
     policy_exists = os.path.isfile(os.path.join(data_out, 'pi.npy'))
@@ -78,38 +82,12 @@ def main(plot, show_fig, force, config_file, data_out):
         pi = np.load(os.path.join(data_out, 'pi.npy'))
 
     # -----------------------------------------------------------
-    # Test Policy
+    # Test Policy -> Plot Generated Policy
     # -----------------------------------------------------------
 
-    # Test specific state using the aquired policy
-    start_charge = params['test']['start_charge']
-    start_tar_node = params['test']['target_node']
-    start_cur_node = params['test']['start_node']
-
-    state = encode_state(start_charge, start_tar_node, start_cur_node, data['num_nodes'])
-
-    if state > data['num_states']:
-        logger.error(f'Error in test policy: state = {state} > num_states')
+    # Continue if parameters and files are valid
+    if not plot:
         return
-
-    # Generate path from policy and output the result
-    logger.info('test policy')
-
-    path_states, path_nodes = path_from_policy(
-        state, P, pi, data['num_nodes'],
-        data['max_actions'],
-        params['test']['max_iter'],
-        params['test']['static_test'])
-
-    logger.info('total path')
-
-    for path_state in path_states:
-        charge, tar_node, cur_node = decode_state(path_state, data['num_nodes'])
-        logger.info(f'step > \t(charge: {charge}, tar_node: {tar_node}, cur_node: {cur_node})')
-
-    # -----------------------------------------------------------
-    # Plot Policy
-    # -----------------------------------------------------------
 
     valid, missing = files_available(
         data_out, ['coordinates.npy', 'charger_ids.npy', 'edgelist_from.npy', 'edgelist_to.npy'])
@@ -118,37 +96,100 @@ def main(plot, show_fig, force, config_file, data_out):
         logger.info(f'Missing files: {missing}.')
         return
 
+    # Load additionally required files
     coordinates = np.load(os.path.join(data_out, 'coordinates.npy'))
     charger_ids = np.load(os.path.join(data_out, 'charger_ids.npy'))
     edgelist_from = np.load(os.path.join(data_out, 'edgelist_from.npy'))
     edgelist_to = np.load(os.path.join(data_out, 'edgelist_to.npy'))
 
-    if plot:
-        # Basic graph of network
-        plot_graph('Test Policy', coordinates, edgelist_from, edgelist_to, False)
+    # Test policy from state picked from console and plot directly
+    if params['test']['pick_state']:
+        # Pick and validate start charge from console
+        max_charge = params['generate']['num_charges'] - 1
+        start_charge = input(f'\nPick start charge (max: {max_charge}): ')
 
-        # Path locations
-        plt.plot(coordinates[0, path_nodes],
-                 coordinates[1, path_nodes], 'go-')
+        if len(start_charge) == 0:
+            start_charge = max_charge
+        elif not start_charge.isnumeric():
+            logger.error(f'Start charge needs to be a numeric value: {start_charge}')
+            return
 
-        # Charger locations
+        start_charge = int(start_charge)
+
+        if start_charge > max_charge:
+            logger.error(f'Start charge is larger than the maximum: {start_charge} >= {max_charge}')
+            return
+
+        # Pick start and target nodes from plot
+        logger.info('Pick start and end node by clicking on the plot!')
+
+        # Plot basic graph of network
+        fig = plot_graph('Test Policy', coordinates, edgelist_from, edgelist_to)
+
+        # Plot charger locations
         plt.plot(coordinates[0, charger_ids],
                  coordinates[1, charger_ids], 'bs')
 
-        # Start location
-        plt.plot(coordinates[0, start_cur_node],
-                 coordinates[1, start_cur_node], 'gD')
+        plt.legend(['charger node'])
 
-        # Target location
-        plt.plot(coordinates[0, start_tar_node],
-                 coordinates[1, start_tar_node], 'rD')
+        # Global variables for on_click handler
+        global start_cur_node,  start_tar_node, iter
 
-        plt.legend(['policy path', 'charger node', 'start node', 'target node'])
+        start_cur_node = 0
+        start_tar_node = 0
+        iter = 0
+
+        def onclick(event):
+            '''! Callback function when mouse is clicked on plot.
+
+            @param event Mouse event providing coordinate data
+            '''
+
+            global start_cur_node, start_tar_node, iter
+
+            iter += 1
+
+            ref_point = np.array([event.xdata, event.ydata])
+            node = find_closest_node(coordinates, ref_point)
+
+            # Start node selected
+            if iter == 1:
+                start_cur_node = node
+                plt.plot(coordinates[0, start_cur_node], coordinates[1, start_cur_node], 'gD')
+                plt.legend(['charger node', f'start_node={start_cur_node}'])
+                plt.draw()
+
+            # Goal node selected
+            if iter == 2:
+                start_tar_node = node
+                plt.plot(coordinates[0, start_tar_node], coordinates[1, start_tar_node], 'rD')
+                plt.legend(['charger node', f'start_node={start_cur_node}',
+                            f'target_node={start_tar_node}'])
+                plt.draw()
+                fig.canvas.mpl_disconnect(cid)
+
+                # Test and plot policy
+                test_policy(start_charge, start_tar_node, start_cur_node, data, params,
+                            coordinates, charger_ids, data_out, P, pi)
+
+        cid = fig.canvas.mpl_connect('button_press_event', onclick)
+        plt.show()
+
+    else:
+        # Test policy from provided state
+        start_charge = params['test']['start_charge']
+        start_tar_node = params['test']['target_node']
+        start_cur_node = params['test']['start_node']
+
+        # Plot basic graph of network
+        plot_graph('Test Policy', coordinates, edgelist_from, edgelist_to)
+
+        # Test and plot policy
+        test_policy(start_charge, start_tar_node, start_cur_node, data,
+                    params, coordinates, charger_ids, data_out, P, pi)
 
         if show_fig:
             plt.show()
-        else:
-            plt.savefig(os.path.join(data_out, 'network_graph_policy.png'), dpi=300)
 
 
 if __name__ == '__main__':

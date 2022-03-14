@@ -15,7 +15,7 @@ auto EvaluateMdp(int *pi_data, float *J_data, int *P_indptr, int *P_indices,
                  const float alpha, const float error_min, const int num_blocks)
     -> void {
 #ifdef VERBOSE
-    std::cout << std::endl << "[cpp backend] running" << std::endl;
+    std::cout << std::endl << "[cpp backend] (INFO) running" << std::endl;
 #endif
 
     const auto num_states = num_nodes * num_nodes * num_charges;
@@ -84,7 +84,7 @@ auto AsyncValueIteration(
         }
 
 #ifdef VERBOSE
-        std::cout << "[cpp backend] global_error: " << global_error
+        std::cout << "[cpp backend] (INFO) global_error: " << global_error
                   << std::endl;
 #endif
 
