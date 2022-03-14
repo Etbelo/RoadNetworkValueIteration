@@ -26,12 +26,20 @@ pip3 install -r requirements.txt
 | [libnpy](https://github.com/llohse/libnpy) | llohse | C++ library for reading and writing of npy files |
 | [eigen](https://github.com/libigl/eigen)   | libigl | C++ library for linear algebra                   |
 
+## Used Dataset
+
+| Link                                       | Author | Description                                      |
+| ------------------------------------------ | ------ | ------------------------------------------------ |
+| [Advances in Spatial and Temporal Databases 9th SSTD 2005](https://link.springer.com/chapter/10.1007/11535331_16) | Camossi, Elena and Bertino, Elisa and Guerrini, Giovanna and Bertolotto, Michela | Paper on Spatial Databases |
+| [Real Datasets for Spatial Databases: Road Networks and Points of Interest](https://www.cs.utah.edu/~lifeifei/SpatialDataset.htm)   | cs.utah.edu | List of cleaned datasets of road networks                   |
+
+
 ## Parameters
 
 | Link                       | Description                                                          |
 | -------------------------- | -------------------------------------------------------------------- |
 | [Makefile](Makefile#L0-L4) | General directory and compilation parameters                         |
-| [Config](config.yaml)      | Usage parameters for generating, evaluating, and testing the project |
+| [Config](config_data_2.yaml)      | Usage parameters for generating, evaluating, and testing the project |
 
 ## Usage
 
