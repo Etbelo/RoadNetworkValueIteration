@@ -1,8 +1,8 @@
 # RoadNetworkValueIteration
 
-This project is a demonstration for generating and evaluating Markov decision processes for road networks, where a vehicle carries charge/fuel that is spent while driving. A policy is generated using asynchronous value iteration utilizing the OpenMP C++ library for multithreaded evaluation. The policy is generated with custom stage cost to change the behavior of travelling to charging stations for refueling. Once generated, a policy can then be used in a stochastic navigation task between any two nodes and starting charge. Furthermore, this project combines Python in the front-end and C++ in the back-end for optimal performance. 
+This project is a demonstration for generating and evaluating Markov decision processes for road networks, where a vehicle carries charge/fuel that is spent while driving. A policy is generated using asynchronous value iteration utilizing the OpenMP C++ library for multithreaded evaluation. The policy is generated using a custom stage cost function to enable on-trip refuelling when necessary. Once generated, a policy can then be used in a stochastic navigation task between any two nodes. Furthermore, this project combines Python in the front-end and C++ in the back-end for optimal performance. 
 
-Overall, this project is only meant as inspiration and study-tool for performance oriented programming and value iteration, as it is used for this purpose only.
+Overall, this project is only meant as inspiration and study-tool for performance oriented programming and value iteration, as it is used for this purpose only. Especially in big datasets, there are still some issues in parameters and stage cost resulting in no adequate policy being found. However, underlying algorithms and behavior can be investigated.
 
 ## Requirements
 
@@ -30,7 +30,7 @@ pip3 install -r requirements.txt
 
 | Link                                       | Author | Description                                      |
 | ------------------------------------------ | ------ | ------------------------------------------------ |
-| [Advances in Spatial and Temporal Databases 9th SSTD 2005](https://link.springer.com/chapter/10.1007/11535331_16) | Camossi, Elena and Bertino, Elisa and Guerrini, Giovanna and Bertolotto, Michela | Paper on Spatial Databases |
+| [Advances in Spatial and Temporal Databases 9th SSTD 2005](https://link.springer.com/chapter/10.1007/11535331_16) | Camossi, Elena and Bertino, Elisa and Guerrini, Giovanna and Bertolotto, Michela | Paper on Trip Planning Queries in Spatial Databases |
 | [Real Datasets for Spatial Databases: Road Networks and Points of Interest](https://www.cs.utah.edu/~lifeifei/SpatialDataset.htm)   | cs.utah.edu | List of cleaned datasets of road networks                   |
 
 
